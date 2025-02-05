@@ -38,6 +38,7 @@ canvas {
     top: 10px;
     z-index: 1000;
     width: 250px;
+    transition: transform 0.2s ease;
 }
 
 .widget h3 {
@@ -107,8 +108,6 @@ canvas {
     
 }
 
-
-
 .setting input[type="checkbox"] {
     width: 16px;
     height: 16px;
@@ -131,24 +130,18 @@ canvas {
     margin: 10px 0;
 }
 
-.color-picker-label {
-    font-size: 12px;
-    color: #333;
-    min-width: 50px;
-}
-
 .color-picker-preview {
-    width: 100%;
+    width: 50px;
     height: 24px;
-    border-radius: 4px;
-    border: 1px solid #ccc;
+    margin-left: 10px;
+    border-radius: 6px;
+    background-color: #000;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: transform 0.2s ease;
 }
 
 .color-picker-preview:hover {
-    transform: scale(1.05);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transform: scale(1.1);
 }
 
 .color-picker-input {
@@ -156,3 +149,41 @@ canvas {
     position: absolute;
     pointer-events: none;
 } 
+
+.color-picker-label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 14px;
+}
+
+.widget.minimized {
+    transform: scale(0);
+    pointer-events: none;
+}
+
+.minimize-button {
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    width: 12px;
+    height: 12px;
+    background-color: #ccc;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.minimized-widget {
+    position: fixed;
+    left: 10px;
+    top: 10px;
+    width: 20px;
+    height: 20px;
+    background-color: #ffffff;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    cursor: pointer;
+    z-index: 1001;
+    display: none;
+}
