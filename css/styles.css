@@ -38,7 +38,7 @@ canvas {
     top: 10px;
     z-index: 1000;
     width: 20%;
-    min-width: 110px;
+    min-width: 150px;
     max-width: 200px;
     transition: transform 0.2s ease;
 }
