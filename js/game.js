@@ -47,7 +47,7 @@ class Game {
         this.currentPos = null;
         this.sizeScale = 1;
         this.friction = 1.0;
-        this.constantForce = { x: -200, y: 0 };
+        this.directionalForce = { x: -200, y: 0 };
         this.spawnInterval = 5;
         this.lastSpawnTime = performance.now();
         this.trailEnabled = false;
@@ -59,10 +59,10 @@ class Game {
         this.showArrows = true;
         this.dotColor = '#000000';
         this.trailColor = '#000000';
-        this.forceFieldScale = 0.005;
-        this.forceFieldTime = 0;
-        this.forceFieldSpeed = 0.1;
-        this.forceFieldStrength = 100;
+        this.flowFieldScale = 0.005;
+        this.flowFieldTime = 0;
+        this.flowFieldSpeed = 0.1;
+        this.flowFieldStrength = 100;
         this.gridSize = 50;
         this.grid = new Map();
     }
@@ -125,9 +125,9 @@ class Game {
         const initialTrailDecay = this.trailFade
         const initialTrailDecayLinear = Math.pow((initialTrailDecay - 0.9) / 0.1, 1/0.2);
 
-        // Calculate initial force field scale slider value
-        const initialForceFieldScale = this.forceFieldScale
-        const initialForceFieldScaleLinear = 0.01 + (Math.log10(initialForceFieldScale / 0.001) / Math.log10(25)) * (1 - 0.01);
+        // Calculate initial flow field scale slider value
+        const initialflowFieldScale = this.flowFieldScale
+        const initialflowFieldScaleLinear = 0.01 + (Math.log10(initialflowFieldScale / 0.001) / Math.log10(25)) * (1 - 0.01);
 
         this.widget.innerHTML = `
             <h3 style="margin: 0 0 10px 0; text-align: center;">Settings</h3>
@@ -140,23 +140,23 @@ class Game {
                 <input type="range" min="0" max="1" step="0.01" value="1" id="frictionScale">
             </div>
             <div class="setting">
-                <label>Force Field Strength: <span id="forceFieldStrengthValue">100</span></label>
-                <input type="range" min="0" max="1000" step="10" value="100" id="forceFieldStrength">
+                <label>Flow Field Strength: <span id="flowFieldStrengthValue">100</span></label>
+                <input type="range" min="0" max="1000" step="10" value="100" id="flowFieldStrength">
             </div>
             <div class="setting">
-                <label>Force Field Scale: <span id="forceFieldScaleValue">${initialForceFieldScaleLinear.toFixed(2)}</span></label>
-                <input type="range" min="0.01" max="1" step="0.01" value="${initialForceFieldScaleLinear}" id="forceFieldScale">
+                <label>Flow Field Scale: <span id="flowFieldScaleValue">${initialflowFieldScaleLinear.toFixed(2)}</span></label>
+                <input type="range" min="0.01" max="1" step="0.01" value="${initialflowFieldScaleLinear}" id="flowFieldScale">
             </div>
             <div class="setting">
-                <label>Force Field Speed: <span id="forceFieldSpeedValue">0.10</span></label>
-                <input type="range" min="0" max="1" step="0.01" value="0.1" id="forceFieldSpeed">
+                <label>Flow Field Speed: <span id="flowFieldSpeedValue">0.10</span></label>
+                <input type="range" min="0" max="1" step="0.01" value="0.1" id="flowFieldSpeed">
             </div>
             <div class="setting">
-                <label>Constant Force: <span id="constantForceValue">-200</span></label>
-                <input type="range" min="-1000" max="1000" step="10" value="-200" id="constantForce">
+                <label>Directional Force: <span id="directionalForceValue">-200</span></label>
+                <input type="range" min="-1000" max="1000" step="10" value="-200" id="directionalForce">
             </div>
             <div class="setting">
-                <label>Spawn Interval (ms): <span id="spawnIntervalValue">5.00</span></label>
+                <label>Spawn Interval<br>(ms): <span id="spawnIntervalValue">5.00</span></label>
                 <input type="range" min="0" max="1000" step="1" value="${initialLinearValue}" id="spawnInterval">
             </div>
             <div class="setting">
@@ -204,31 +204,31 @@ class Game {
             this.widget.querySelector('#frictionValue').textContent = e.target.value;
         });
 
-        // Force field strength
-        this.widget.querySelector('#forceFieldStrength').addEventListener('input', (e) => {
-            this.forceFieldStrength = parseFloat(e.target.value);
-            this.widget.querySelector('#forceFieldStrengthValue').textContent = e.target.value;
+        // flow field strength
+        this.widget.querySelector('#flowFieldStrength').addEventListener('input', (e) => {
+            this.flowFieldStrength = parseFloat(e.target.value);
+            this.widget.querySelector('#flowFieldStrengthValue').textContent = e.target.value;
         });
 
-        // Force field scale
-        this.widget.querySelector('#forceFieldScale').addEventListener('input', (e) => {
+        // flow field scale
+        this.widget.querySelector('#flowFieldScale').addEventListener('input', (e) => {
             const linearValue = parseFloat(e.target.value);
             // Map linear value (0.01-1) to logarithmic scale (0.001-0.025)
             const logValue = 0.001 * Math.pow(10, (linearValue - 0.01) / (1 - 0.01) * Math.log10(25));
-            this.forceFieldScale = logValue;
-            this.widget.querySelector('#forceFieldScaleValue').textContent = linearValue.toFixed(2);
+            this.flowFieldScale = logValue;
+            this.widget.querySelector('#flowFieldScaleValue').textContent = linearValue.toFixed(2);
         });
 
-        // Force field speed
-        this.widget.querySelector('#forceFieldSpeed').addEventListener('input', (e) => {
-            this.forceFieldSpeed = parseFloat(e.target.value);
-            this.widget.querySelector('#forceFieldSpeedValue').textContent = parseFloat(e.target.value).toFixed(2);
+        // flow field speed
+        this.widget.querySelector('#flowFieldSpeed').addEventListener('input', (e) => {
+            this.flowFieldSpeed = parseFloat(e.target.value);
+            this.widget.querySelector('#flowFieldSpeedValue').textContent = parseFloat(e.target.value).toFixed(2);
         });
 
-        // Constant force
-        this.widget.querySelector('#constantForce').addEventListener('input', (e) => {
-            this.constantForce.x = parseFloat(e.target.value);
-            this.widget.querySelector('#constantForceValue').textContent = e.target.value;
+        // Constant flow
+        this.widget.querySelector('#directionalForce').addEventListener('input', (e) => {
+            this.directionalForce.x = parseFloat(e.target.value);
+            this.widget.querySelector('#directionalForceValue').textContent = e.target.value;
         });
 
         // Spawn interval
@@ -368,21 +368,21 @@ class Game {
         // Update spatial grid
         this.updateSpatialGrid();
 
-        // Update force field time
-        this.forceFieldTime += deltaTime * this.forceFieldSpeed;
+        // Update flow field time
+        this.flowFieldTime += deltaTime * this.flowFieldSpeed;
         
-        // Apply force field to dots
+        // Apply flow field to dots
         for (const dot of this.dots) {
-            const force = this.getForceAt(dot.x, dot.y);
-            const forceStrength = this.forceFieldStrength;
-            dot.vx += force.x * forceStrength * deltaTime;
-            dot.vy += force.y * forceStrength * deltaTime;
+            const flow = this.getflowAt(dot.x, dot.y);
+            const flowStrength = this.flowFieldStrength;
+            dot.vx += flow.x * flowStrength * deltaTime;
+            dot.vy += flow.y * flowStrength * deltaTime;
         }
 
-        // Apply constant force to dots
+        // Apply constant flow to dots
         for (const dot of this.dots) {
-            dot.vx += this.constantForce.x * deltaTime;
-            dot.vy += this.constantForce.y * deltaTime;
+            dot.vx += this.directionalForce.x * deltaTime;
+            dot.vy += this.directionalForce.y * deltaTime;
         }
         
         // Update dot positions
@@ -422,7 +422,7 @@ class Game {
         }
     }
 
-    getForceAt(x, y) {
+    getflowAt(x, y) {
         if (!this.perlin) {
             console.error('Perlin instance not found', { perlin: this.perlin });
             return { x: 0, y: 0 };
@@ -435,15 +435,15 @@ class Game {
         try {
             // Use separate noise samples for x and y components
             const angleX = this.perlin.noise(
-                x * this.forceFieldScale, 
-                y * this.forceFieldScale, 
-                this.forceFieldTime
+                x * this.flowFieldScale, 
+                y * this.flowFieldScale, 
+                this.flowFieldTime
             ) * Math.PI * 2;
             
             const angleY = this.perlin.noise(
-                y * this.forceFieldScale, 
-                x * this.forceFieldScale, 
-                this.forceFieldTime + 1000 // Offset to create variation
+                y * this.flowFieldScale, 
+                x * this.flowFieldScale, 
+                this.flowFieldTime + 1000 // Offset to create variation
             ) * Math.PI * 2;
             
             return {
@@ -451,7 +451,7 @@ class Game {
                 y: Math.sin(angleY)
             };
         } catch (e) {
-            console.error('Error calculating force:', e);
+            console.error('Error calculating flow:', e);
             return { x: 0, y: 0 };
         }
     }
@@ -505,37 +505,37 @@ class Game {
             this.ctx.fill();
         }
 
-        // Draw force field arrows if enabled
+        // Draw flow field arrows if enabled
         if (this.showArrows) {
-            this.drawForceField();
+            this.drawflowField();
         }
     }
 
-    drawForceField() {
+    drawflowField() {
         // Calculate grid size based on canvas dimensions
         const gridSize = Math.max(10, Math.min(this.canvas.width, this.canvas.height) / 50);
         const arrowSize = gridSize * 0.5;
         
         for (let x = 0; x < this.canvas.width; x += gridSize) {
             for (let y = 0; y < this.canvas.height; y += gridSize) {
-                const force = this.getForceAt(x, y);
+                const flow = this.getflowAt(x, y);
                 
                 // Draw arrow
                 this.ctx.beginPath();
                 this.ctx.moveTo(x, y);
-                this.ctx.lineTo(x + force.x * arrowSize, y + force.y * arrowSize);
+                this.ctx.lineTo(x + flow.x * arrowSize, y + flow.y * arrowSize);
                 
                 // Draw arrowhead
-                const arrowAngle = Math.atan2(force.y, force.x);
-                this.ctx.moveTo(x + force.x * arrowSize, y + force.y * arrowSize);
+                const arrowAngle = Math.atan2(flow.y, flow.x);
+                this.ctx.moveTo(x + flow.x * arrowSize, y + flow.y * arrowSize);
                 this.ctx.lineTo(
-                    x + force.x * arrowSize - Math.cos(arrowAngle - Math.PI/6) * arrowSize/3,
-                    y + force.y * arrowSize - Math.sin(arrowAngle - Math.PI/6) * arrowSize/3
+                    x + flow.x * arrowSize - Math.cos(arrowAngle - Math.PI/6) * arrowSize/3,
+                    y + flow.y * arrowSize - Math.sin(arrowAngle - Math.PI/6) * arrowSize/3
                 );
-                this.ctx.moveTo(x + force.x * arrowSize, y + force.y * arrowSize);
+                this.ctx.moveTo(x + flow.x * arrowSize, y + flow.y * arrowSize);
                 this.ctx.lineTo(
-                    x + force.x * arrowSize - Math.cos(arrowAngle + Math.PI/6) * arrowSize/3,
-                    y + force.y * arrowSize - Math.sin(arrowAngle + Math.PI/6) * arrowSize/3
+                    x + flow.x * arrowSize - Math.cos(arrowAngle + Math.PI/6) * arrowSize/3,
+                    y + flow.y * arrowSize - Math.sin(arrowAngle + Math.PI/6) * arrowSize/3
                 );
                 
                 this.ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
@@ -597,12 +597,12 @@ class Game {
         
         const overlap = minDistance - distance;
         const angle = Math.atan2(dy, dx);
-        const force = overlap * 0.5;
+        const flow = overlap * 0.5;
         
-        dot1.x += Math.cos(angle) * force;
-        dot1.y += Math.sin(angle) * force;
-        dot2.x -= Math.cos(angle) * force;
-        dot2.y -= Math.sin(angle) * force;
+        dot1.x += Math.cos(angle) * flow;
+        dot1.y += Math.sin(angle) * flow;
+        dot2.x -= Math.cos(angle) * flow;
+        dot2.y -= Math.sin(angle) * flow;
     }
 }
 
