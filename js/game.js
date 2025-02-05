@@ -12,15 +12,7 @@ class Game {
 
         // Create FPS display
         this.fpsElement = document.createElement('div');
-        this.fpsElement.style.position = 'fixed';
-        this.fpsElement.style.top = '10px';
-        this.fpsElement.style.right = '10px';
-        this.fpsElement.style.fontSize = '12px';
-        this.fpsElement.style.fontFamily = 'Inter, sans-serif';
-        this.fpsElement.style.backgroundColor = 'white';
-        this.fpsElement.style.padding = '4px 8px';
-        this.fpsElement.style.borderRadius = '3px';
-        this.fpsElement.style.zIndex = '1000';
+        this.fpsElement.className = 'fps-display';
         document.body.appendChild(this.fpsElement);
 
         // FPS calculation variables
@@ -28,43 +20,27 @@ class Game {
         this.frameCount = 0;
         this.currentFps = 0;
 
-        // Create minimize button
-        this.minimizeButton = document.createElement('div');
-        this.minimizeButton.classList.add('minimized-widget');
-        this.minimizeButton.textContent = '>';
-        this.minimizeButton.style.display = 'none'; // Initially hidden
-        document.body.appendChild(this.minimizeButton);
+        // Create widget toggle button
+        this.widgetToggle = document.createElement('div');
+        this.widgetToggle.className = 'widget-toggle material-icons';
+        this.widgetToggle.textContent = 'settings'; // Settings icon
+        document.body.appendChild(this.widgetToggle);
 
-        // Add event listener for minimize button
-        this.minimizeButton.addEventListener('click', () => {
-            this.widget.style.display = 'block';
-            this.minimizeButton.style.display = 'none';
+        // Add event listener for widget toggle
+        this.widgetToggle.addEventListener('click', () => {
+            const isVisible = this.widget.style.display === 'block';
+            this.widget.style.display = isVisible ? 'none' : 'block';
+            this.widgetToggle.textContent = isVisible ? 'settings' : 'close'; // Change icon
         });
 
-        // Add minimize button to settings widget
-        const minimizeButton = document.createElement('div');
-        minimizeButton.style.position = 'absolute';
-        minimizeButton.style.right = '10px';
-        minimizeButton.style.top = '10px';
-        minimizeButton.style.width = '12px';
-        minimizeButton.style.height = '12px';
-        minimizeButton.style.backgroundColor = '#ffffff';
-        minimizeButton.style.borderRadius = '2px';
-        minimizeButton.style.cursor = 'pointer';
-        minimizeButton.textContent = '<';
-        this.widget.appendChild(minimizeButton);
-
-        // Add event listener for minimize button
-        minimizeButton.addEventListener('click', () => {
-            this.widget.style.display = 'none';
-            this.minimizeButton.style.display = 'block';
-        });
+        // Hide widget initially
+        this.widget.style.display = 'none';
     }
 
     initializeSettings() {
-        // Initialize all settings and default values
-        this.pixelRatio = window.devicePixelRatio || 1;
-        this.dotRadius = 5 * this.pixelRatio;
+        // Calculate base dot radius based on canvas dimensions
+        this.baseDotRadius = Math.max(2, Math.min(window.innerWidth, window.innerHeight) / 200);
+        this.dotRadius = this.baseDotRadius;
         this.dots = [];
         this.dragging = false;
         this.startPos = null;
@@ -98,7 +74,7 @@ class Game {
         document.body.appendChild(this.canvas);
 
         this.trailCanvas = document.createElement('canvas');
-        this.trailCtx = this.trailCanvas.getContext('2d');
+        this.trailCtx = this.trailCanvas.getContext('2d', { willReadFrequently: true });
         this.resize();
 
         window.addEventListener('resize', this.resize.bind(this));
@@ -134,15 +110,7 @@ class Game {
     initializeWidget() {
         // Initialize settings widget
         this.widget = document.createElement('div');
-        this.widget.style.position = 'fixed';
-        this.widget.style.left = '10px';
-        this.widget.style.top = '10px';
-        this.widget.style.backgroundColor = 'white';
-        this.widget.style.border = '1px solid #ccc';
-        this.widget.style.padding = '15px';
-        this.widget.style.borderRadius = '5px';
-        this.widget.style.zIndex = '1000';
-        this.widget.style.width = '250px';
+        this.widget.className = 'widget';
         document.body.appendChild(this.widget);
 
         this.initializeWidgetContent();
@@ -150,29 +118,37 @@ class Game {
 
     initializeWidgetContent() {
         // Initialize widget content
-        const initialLogValue = 5;
+        const initialLogValue = this.spawnInterval
         const initialLinearValue = (Math.log10(initialLogValue) + 1) / 3 * 1000;
 
+        // Calculate initial trail decay value
+        const initialTrailDecay = this.trailFade
+        const initialTrailDecayLinear = Math.pow((initialTrailDecay - 0.9) / 0.1, 1/0.2);
+
+        // Calculate initial force field scale slider value
+        const initialForceFieldScale = this.forceFieldScale
+        const initialForceFieldScaleLinear = 0.01 + (Math.log10(initialForceFieldScale / 0.001) / Math.log10(25)) * (1 - 0.01);
+
         this.widget.innerHTML = `
-            <h3 style="margin: 0 0 10px 0;">Settings</h3>
+            <h3 style="margin: 0 0 10px 0; text-align: center;">Settings</h3>
             <div class="setting">
-                <label>Dot Size: <span id="sizeValue">1.0</span></label>
-                <input type="range" min="0.1" max="5" step="0.1" value="1" id="sizeScale">
+                <label>Particle Size: <span id="sizeValue">1.00</span></label>
+                <input type="range" min="0.1" max="5" step="0.05" value="1" id="sizeScale">
             </div>
             <div class="setting">
                 <label>Friction: <span id="frictionValue">1.0</span></label>
-                <input type="range" min="0" max="2" step="0.1" value="1" id="frictionScale">
+                <input type="range" min="0" max="1" step="0.01" value="1" id="frictionScale">
             </div>
             <div class="setting">
                 <label>Force Field Strength: <span id="forceFieldStrengthValue">100</span></label>
                 <input type="range" min="0" max="1000" step="10" value="100" id="forceFieldStrength">
             </div>
             <div class="setting">
-                <label>Force Field Scale: <span id="forceFieldScaleValue">0.005</span></label>
-                <input type="range" min="0.001" max="0.01" step="0.0001" value="0.005" id="forceFieldScale">
+                <label>Force Field Scale: <span id="forceFieldScaleValue">${initialForceFieldScaleLinear.toFixed(2)}</span></label>
+                <input type="range" min="0.01" max="1" step="0.01" value="${initialForceFieldScaleLinear}" id="forceFieldScale">
             </div>
             <div class="setting">
-                <label>Force Field Speed: <span id="forceFieldSpeedValue">0.1</span></label>
+                <label>Force Field Speed: <span id="forceFieldSpeedValue">0.10</span></label>
                 <input type="range" min="0" max="1" step="0.01" value="0.1" id="forceFieldSpeed">
             </div>
             <div class="setting">
@@ -187,15 +163,15 @@ class Game {
                 <label>Trails: <input type="checkbox" id="trails"></label>
             </div>
             <div class="setting">
-                <label>Trail Decay: <span id="trailDecayValue">0.98</span></label>
-                <input type="range" min="0" max="1" step="0.01" value="0.98" id="trailDecay">
+                <label>Trail Decay: <span id="trailDecayValue">0.980</span></label>
+                <input type="range" min="0" max="1" step="0.01" value="${initialTrailDecayLinear.toFixed(3)}" id="trailDecay">
             </div>
             <div class="setting">
-                <label>Trail Alpha: <span id="trailAlphaValue">0.1</span></label>
+                <label>Trail Alpha: <span id="trailAlphaValue">0.10</span></label>
                 <input type="range" min="0" max="1" step="0.01" value="0.1" id="trailAlpha">
             </div>
-            <div class="color-picker-container">
-                <span class="color-picker-label">Color:</span>
+            <div class="setting color-picker-container">
+                <label>Color:</label>
                 <div class="color-picker-preview" style="background-color: ${this.dotColor};"></div>
                 <input type="color" id="colorPicker" value="${this.dotColor}" class="color-picker-input">
             </div>
@@ -215,7 +191,7 @@ class Game {
         // Size scale
         this.widget.querySelector('#sizeScale').addEventListener('input', (e) => {
             this.sizeScale = parseFloat(e.target.value);
-            this.widget.querySelector('#sizeValue').textContent = e.target.value;
+            this.widget.querySelector('#sizeValue').textContent = parseFloat(e.target.value).toFixed(2);
         });
 
         // Friction
@@ -236,14 +212,17 @@ class Game {
 
         // Force field scale
         this.widget.querySelector('#forceFieldScale').addEventListener('input', (e) => {
-            this.forceFieldScale = parseFloat(e.target.value);
-            this.widget.querySelector('#forceFieldScaleValue').textContent = e.target.value;
+            const linearValue = parseFloat(e.target.value);
+            // Map linear value (0.01-1) to logarithmic scale (0.001-0.025)
+            const logValue = 0.001 * Math.pow(10, (linearValue - 0.01) / (1 - 0.01) * Math.log10(25));
+            this.forceFieldScale = logValue;
+            this.widget.querySelector('#forceFieldScaleValue').textContent = linearValue.toFixed(2);
         });
 
         // Force field speed
         this.widget.querySelector('#forceFieldSpeed').addEventListener('input', (e) => {
             this.forceFieldSpeed = parseFloat(e.target.value);
-            this.widget.querySelector('#forceFieldSpeedValue').textContent = e.target.value;
+            this.widget.querySelector('#forceFieldSpeedValue').textContent = parseFloat(e.target.value).toFixed(2);
         });
 
         // Constant force
@@ -280,7 +259,7 @@ class Game {
         // Trail alpha
         this.widget.querySelector('#trailAlpha').addEventListener('input', (e) => {
             this.trailAlpha = parseFloat(e.target.value);
-            this.widget.querySelector('#trailAlphaValue').textContent = e.target.value;
+            this.widget.querySelector('#trailAlphaValue').textContent = parseFloat(e.target.value).toFixed(2);
         });
 
         // Collisions
@@ -322,16 +301,13 @@ class Game {
         const displayWidth = window.innerWidth;
         const displayHeight = window.innerHeight;
         
+        // Recalculate dot radius based on new dimensions
+        this.baseDotRadius = Math.max(2, Math.min(displayWidth, displayHeight) / 200);
+        this.dotRadius = this.baseDotRadius;
+        
         // Set canvas size accounting for pixel ratio
-        this.canvas.width = displayWidth * this.pixelRatio;
-        this.canvas.height = displayHeight * this.pixelRatio;
-        
-        // Scale canvas using CSS
-        this.canvas.style.width = `${displayWidth}px`;
-        this.canvas.style.height = `${displayHeight}px`;
-        
-        // Scale context to account for pixel ratio
-        this.ctx.scale(this.pixelRatio, this.pixelRatio);
+        this.canvas.width = displayWidth;
+        this.canvas.height = displayHeight
 
         // Resize trail buffer
         this.trailCanvas.width = this.canvas.width;
@@ -536,8 +512,9 @@ class Game {
     }
 
     drawForceField() {
-        const gridSize = 20;
-        const arrowSize = 10;
+        // Calculate grid size based on canvas dimensions
+        const gridSize = Math.max(10, Math.min(this.canvas.width, this.canvas.height) / 50);
+        const arrowSize = gridSize * 0.5;
         
         for (let x = 0; x < this.canvas.width; x += gridSize) {
             for (let y = 0; y < this.canvas.height; y += gridSize) {

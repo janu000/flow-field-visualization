@@ -78,5 +78,4 @@ class Perlin {
 
 if (typeof window !== 'undefined') {
     window.Perlin = Perlin;
-    console.log('Perlin noise generator loaded');
 } 
