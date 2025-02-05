@@ -41,6 +41,8 @@ canvas {
     min-width: 150px;
     max-width: 200px;
     transition: transform 0.2s ease;
+    max-height: 90vh;
+    overflow-y: auto;
 }
 
 .widget h3 {
@@ -175,4 +177,22 @@ canvas {
     padding: 4px 8px;
     border-radius: 3px;
     z-index: 1000;
+}
+
+.widget::-webkit-scrollbar {
+    width: 6px;
+}
+
+.widget::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.widget::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 3px;
+}
+
+.widget::-webkit-scrollbar-thumb:hover {
+    background: #555;
 }
