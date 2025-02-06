@@ -196,3 +196,20 @@ canvas {
 .widget::-webkit-scrollbar-thumb:hover {
     background: #555;
 }
+
+#resetSimulation {
+    width: 100%;
+    padding: 8px;
+    margin-top: 10px;
+    background-color: #007AFF;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+#resetSimulation:hover {
+    background-color: #0066CC;
+    transform: scale(1.02);
+}

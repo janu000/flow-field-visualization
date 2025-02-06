@@ -65,6 +65,7 @@ class Game {
         this.flowFieldStrength = 100;
         this.gridSize = 50;
         this.grid = new Map();
+        this.wrapParticles = false;
     }
 
     initializeCanvas() {
@@ -184,14 +185,29 @@ class Game {
             <div class="setting">
                 <label>Show Arrows: <input type="checkbox" id="showArrows" checked></label>
             </div>
+            <div class="setting">
+                <label>Wrap Particles: <input type="checkbox" id="wrapParticles"></label>
+            </div>
+            <div class="setting">
+                <button id="resetSimulation">Reset Simulation</button>
+            </div>
         `;
     }
 
     initializeEventListeners() {
         // Size scale
         this.widget.querySelector('#sizeScale').addEventListener('input', (e) => {
-            this.sizeScale = parseFloat(e.target.value);
-            this.widget.querySelector('#sizeValue').textContent = parseFloat(e.target.value).toFixed(2);
+            const newSizeScale = parseFloat(e.target.value);
+            
+            // Update size of all existing particles
+            for (const dot of this.dots) {
+                dot.sizeScale = newSizeScale;
+                dot.mass = Math.pow(newSizeScale, 3); // Update mass based on new size
+            }
+            
+            // Update global size scale
+            this.sizeScale = newSizeScale;
+            this.widget.querySelector('#sizeValue').textContent = newSizeScale.toFixed(2);
         });
 
         // Friction
@@ -277,6 +293,11 @@ class Game {
             this.showArrows = e.target.checked;
         });
 
+        // Wrap particles
+        this.widget.querySelector('#wrapParticles').addEventListener('change', (e) => {
+            this.wrapParticles = e.target.checked;
+        });
+
         this.widget.querySelector('.color-picker-preview').addEventListener('click', () => {
             this.widget.querySelector('#colorPicker').click();
         });
@@ -285,6 +306,12 @@ class Game {
             this.dotColor = e.target.value;
             this.trailColor = e.target.value;
             this.widget.querySelector('.color-picker-preview').style.backgroundColor = e.target.value;
+        });
+
+        // Reset simulation
+        this.widget.querySelector('#resetSimulation').addEventListener('click', () => {
+            this.dots = [];
+            this.trailCtx.clearRect(0, 0, this.trailCanvas.width, this.trailCanvas.height);
         });
     }
 
@@ -328,17 +355,7 @@ class Game {
             this.fpsElement.textContent = `FPS: ${this.currentFps}`;
         }
 
-        // Calculate how many dots to spawn based on elapsed time
-        const elapsedSinceLastSpawn = currentTime - this.lastSpawnTime;
-        if (elapsedSinceLastSpawn >= this.spawnInterval) {
-            const spawnCount = Math.floor(elapsedSinceLastSpawn / this.spawnInterval);
-            for (let i = 0; i < spawnCount; i++) {
-                this.spawnDotOnRight();
-            }
-            this.lastSpawnTime = currentTime;
-        }
-
-        this.update(deltaTime);
+        this.update(deltaTime, currentTime);
         this.render();
         requestAnimationFrame(this.loop.bind(this));
     }
@@ -364,7 +381,7 @@ class Game {
         });
     }
 
-    update(deltaTime) {
+    update(deltaTime, currentTime) {
         // Update spatial grid
         this.updateSpatialGrid();
 
@@ -395,12 +412,34 @@ class Game {
             dot.vy *= 1 - dot.friction * deltaTime;
         }
         
-        // Remove dots outside the canvas with a certain margin
-        const margin = 100; // Margin outside the canvas
-        this.dots = this.dots.filter(dot => 
-            dot.x >= -margin && dot.x <= this.canvas.width + margin &&
-            dot.y >= -margin && dot.y <= this.canvas.height + margin
-        );
+        // Handle particle wrapping
+        if (this.wrapParticles) {
+            for (const dot of this.dots) {
+                if (dot.x < 0) dot.x += this.canvas.width;
+                if (dot.x > this.canvas.width) dot.x -= this.canvas.width;
+                if (dot.y < 0) dot.y += this.canvas.height;
+                if (dot.y > this.canvas.height) dot.y -= this.canvas.height;
+            }
+        } else {
+            // Remove particles outside canvas with margin
+            const margin = 100;
+            this.dots = this.dots.filter(dot => 
+                dot.x >= -margin && dot.x <= this.canvas.width + margin &&
+                dot.y >= -margin && dot.y <= this.canvas.height + margin
+            );
+        }
+        
+        // Only spawn particles if wrapping is disabled
+        if (!this.wrapParticles) {
+            const elapsedSinceLastSpawn = currentTime - this.lastSpawnTime;
+            if (elapsedSinceLastSpawn >= this.spawnInterval) {
+                const spawnCount = Math.floor(elapsedSinceLastSpawn / this.spawnInterval);
+                for (let i = 0; i < spawnCount; i++) {
+                    this.spawnDotOnRight();
+                }
+                this.lastSpawnTime = currentTime;
+            }
+        }
         
         // Check collisions if enabled
         if (this.enableCollisions) {
